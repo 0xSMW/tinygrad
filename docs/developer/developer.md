@@ -52,3 +52,18 @@ All runtime implementations can be found in the [runtime directory](https://gith
 ### HCQ Compatible Runtimes
 
 HCQ API is a lower-level API for defining runtimes. Interaction with HCQ-compatible devices occurs at a lower level, with commands issued directly to hardware queues. Some examples of such backends are [NV](https://github.com/tinygrad/tinygrad/tree/master/tinygrad/runtime/ops_nv.py) and [AMD](https://github.com/tinygrad/tinygrad/tree/master/tinygrad/runtime/ops_amd.py), which are userspace drivers for NVIDIA and AMD devices respectively. You can find more information about the API on [HCQ overview page](hcq.md)
+
+## Blake3 Tree Hash
+
+`tinygrad.crypto.blake3.blake3_hash(data)` returns a 32-byte digest using GPU kernels.
+The input is sliced into 64-byte chunks and compressed in one parallel pass. The
+array of chaining values is then reduced hierarchically, launching one merge
+kernel per level (roughly `1 + ceil(log2(len(data)/64))` launches in total).
+
+```python
+from tinygrad.crypto.blake3 import blake3_hash
+print(blake3_hash(b"hello"))
+```
+
+This schedules O(log n) kernels on `Device["REMOTE"]` by default, keeping all
+intermediate buffers on the device for minimal overhead.
